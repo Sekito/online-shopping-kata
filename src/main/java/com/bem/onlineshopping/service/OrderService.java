@@ -35,9 +35,11 @@ public class OrderService {
     @Autowired
     private OrderMapper orderMapper;
 
+    private static final int DELIVERY_DAYS = 3;
+
 
     @Transactional
-    public OrderDTO confirmOrder(Long cartId) {
+    public Order confirmOrder(Long cartId) {
         Cart cart = cartRepository.findById(cartId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
 
@@ -46,11 +48,10 @@ public class OrderService {
         List<CartProduct> cartProducts = new ArrayList<>();
 
         cart.getCartProductList().forEach(cartProduct -> {
-
             CartProduct orderCartProduct = new CartProduct();
+
             orderCartProduct.setProduct(cartProduct.getProduct());
             orderCartProduct.setQuantity(cartProduct.getQuantity());
-
             orderCartProduct.setOrder(order);
 
             cartProducts.add(orderCartProduct);
@@ -62,13 +63,13 @@ public class OrderService {
         order.setTrackingNumber(UUID.randomUUID().toString());
         order.setTotalAmount(cart.getTotalPrice());
         order.setTotalItems(cart.getNumberOfProduct());
-        order.setDeliveryDate(LocalDate.now().plusDays(3));
+        order.setDeliveryDate(LocalDate.now().plusDays(DELIVERY_DAYS));
         orderRepository.save(order);
 
-        // cart.getCartProductList().clear();
+        cart.clearCart();
         cartRepository.save(cart);
 
-        return orderMapper.toDto(order);
+        return order;
     }
 
     public List<OrderDTO> getAllOrders() {
@@ -77,22 +78,27 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    public OrderDTO getOrderById(Long orderId) {
-        return orderMapper.toDto(orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found")));
+    public Order getOrderById(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
     }
 
-    public List<OrderDTO> getOrdersByCustomerId(Long customerId) {
+    public List<Order> getOrdersByCustomerId(Long customerId) {
         customerRepository.findById(customerId).orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
-        return orderRepository.findByCustomer_CustomerId(customerId)
-                .stream()
+        List<Order> orders = orderRepository.findByCustomer_CustomerId(customerId);
+        return orders;
+        /*return orders.stream()
                 .map(orderMapper::toDto)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList());*/
     }
 
-    public OrderTrackingResponseDTO trackOrder(Long orderId) {
+    public Order trackOrder(Long orderId) {
+        return getOrderById(orderId);
+    }
+
+   /* public OrderTrackingResponseDTO trackOrder(Long orderId) {
         OrderDTO order = getOrderById(orderId);
         OrderTrackingResponseDTO response = orderMapper.toTrackingResponseDTO(order);
         return response;
-    }
+    }*/
 }

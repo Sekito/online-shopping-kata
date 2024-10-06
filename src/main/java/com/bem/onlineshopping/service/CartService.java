@@ -28,23 +28,15 @@ public class CartService {
     private ProductRepository productRepository;
 
     @Autowired
-    private CartMapper cartMapper;
-
-    @Autowired
-    private CartProductMapper cartProductMapper;
-
-    @Autowired
     private CartProductRepository cartProductRepository;
 
 
-    public CartDTO getCartById(Long cartId) {
-        return cartMapper.toDto(cartRepository.findById(cartId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart not found")));
+    public Cart getCartById(Long cartId) {
+        return cartRepository.findById(cartId).orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
     }
 
-
     @Transactional
-    public CartDTO addProductToCart(AddProductToCartDTO dto) {
+    public Cart addProductToCart(AddProductToCartDTO dto) {
         Cart cart = cartRepository.findById(dto.getCartId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
         Product product = productRepository.findById(dto.getProductId())
@@ -67,53 +59,44 @@ public class CartService {
             cartProductRepository.save(existingCartProduct);
         } else {
             CartProduct cartProduct = new CartProduct();
-            cartProduct.setCart(cart);
             cartProduct.setProduct(product);
             cartProduct.setQuantity(dto.getQuantity());
+            cart.addCartProduct(cartProduct);
             cartProductRepository.save(cartProduct);
-            cart.getCartProductList().add(cartProduct);
         }
 
         product.setInventory(availableQuantity - dto.getQuantity());
         productRepository.save(product);
 
-        cart.setNumberOfProduct(cart.getCartProductList().size());
-        double totalPrice = cart.getCartProductList().stream()
-                .map(cartProduct1 -> cartProduct1.getProduct().getPrice() * cartProduct1.getQuantity())
-                .reduce(0.0, Double::sum);
-        cart.setTotalPrice(totalPrice);
-
         cartRepository.save(cart);
 
-        return cartMapper.toDto(cart);
+        return cart;
     }
 
-    public CartDTO removeProductFromCart(Long cartProductId) {
-        CartProduct cartProduct = cartProductRepository.findById(cartProductId).orElseThrow(() -> new RuntimeException("Product not found"));
+    @Transactional
+    public Cart removeProductFromCart(Long cartProductId) {
+
+        CartProduct cartProduct = cartProductRepository.findById(cartProductId).orElseThrow(() -> new RuntimeException("CartProduct not found"));
 
 
         Product product = cartProduct.getProduct();
         product.setInventory(product.getInventory()+cartProduct.getQuantity());
 
-        productRepository.save(product);
-        cartProductRepository.delete(cartProduct);
+
         Cart cart = cartProduct.getCart();
-        double sum = cart.getCartProductList().stream()
-                .map(cartProduct1 -> cartProduct1.getProduct().getPrice() * cartProduct1.getQuantity())
-                .reduce((Double::sum) ).get();
-        cart.setTotalPrice(sum);
+        cart.removeCartProduct(cartProduct);
+        cartProductRepository.delete(cartProduct);
         cartRepository.save(cart);
-        return cartMapper.toDto(cart);
+        return cart;
     }
 
-    public CartDTO getCartByCustomerId(Long customerId) {
-        return cartMapper.toDto(cartRepository.findByCustomer_CustomerId(customerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart not found")));
+    public Cart getCartByCustomerId(Long customerId) {
+        return cartRepository.findByCustomer_CustomerId(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
     }
 
-    public CartProductDTO getCartProductById(Long cartProductId) {
-        CartProductDTO cartProductDTO = cartProductMapper.toDto(cartProductRepository.findById(cartProductId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart not found")));
-        return cartProductDTO;
+    public CartProduct getCartProductById(Long cartProductId) {
+        return cartProductRepository.findById(cartProductId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
     }
 }

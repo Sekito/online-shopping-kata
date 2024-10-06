@@ -3,10 +3,16 @@ package com.bem.onlineshopping.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
-import lombok.Data;
+import lombok.*;
+
+import java.util.Objects;
+
 
 @Entity
-@Data
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class CartProduct {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -26,4 +32,24 @@ public class CartProduct {
     @JsonIgnore
     @ManyToOne
     private Order order;
+
+    public Double getTotalPrice() {
+        if (product != null) {
+            return product.getPrice() * quantity;
+        }
+        return 0.0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof CartProduct)) return false;
+        CartProduct that = (CartProduct) o;
+        return Objects.equals(cartProductId, that.cartProductId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cartProductId);
+    }
 }

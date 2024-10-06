@@ -19,4 +19,5 @@ public class CustomerDTO {
     @Size(min = 6, max = 30, message = "Password must be exactly 6 digits")
     private String password;
     private CartDTO cart;
+    //private List<OrderDTO> orders = new ArrayList<>();
 }

@@ -22,8 +22,4 @@ public class Product {
     @Min(value = 0, message = "Inventory cannot be negative")
     private int inventory;
 
-    @JsonIgnore
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "product")
-    private List<CartProduct> cartProductList;
-
 }

@@ -19,31 +19,36 @@ public class ProductService {
     @Autowired
     private ProductMapper productMapper;
 
-    public List<ProductDTO> getAllProducts() {
-        return productRepository.findAll().stream()
+    public List<Product> getAllProducts() {
+        return productRepository.findAll();
+      /*  return productRepository.findAll().stream()
                 .map(productMapper::toDto)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList());*/
     }
 
-    public ProductDTO getProductById(Long id) {
-        return productMapper.toDto(productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found")));
+    public Product getProductById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
     }
 
-    public ProductDTO createProduct(ProductDTO productDTO) {
+    public Product createProduct(ProductDTO productDTO) {
         Product product = productMapper.toEntity(productDTO);
-        return productMapper.toDto(productRepository.save(product));
+        return productRepository.save(product);
     }
 
-    public ProductDTO updateProduct(Long id, ProductDTO updatedProductDTO) {
+    public Product updateProduct(Long id, ProductDTO updatedProductDTO) {
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
         existingProduct.setName(updatedProductDTO.getName());
         existingProduct.setPrice(updatedProductDTO.getPrice());
-        return productMapper.toDto(productRepository.save(existingProduct));
+        return productRepository.save(existingProduct);
     }
 
     public void deleteProduct(Long id) {
         productRepository.deleteById(id);
+    }
+
+    public List<Product> getAvailableProducts() {
+        return productRepository.findProductByInventoryGreaterThan(0);
     }
 }

@@ -20,5 +20,5 @@ public interface OrderMapper {
     @Mapping(target = "totalAmount", source = "totalAmount")
     @Mapping(target = "totalItems", source = "totalItems")
     @Mapping(target = "deliveryDate", source = "deliveryDate")
-    OrderTrackingResponseDTO toTrackingResponseDTO(OrderDTO order);
+    OrderTrackingResponseDTO toTrackingResponseDTO(Order order);
 }
