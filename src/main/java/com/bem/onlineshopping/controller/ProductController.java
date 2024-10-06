@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,7 +29,7 @@ public class ProductController {
         this.productMapper = productMapper;
     }
 
-    @GetMapping
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<EntityModel<ProductDTO>>> getAllProducts() {
         List<Product> products = productService.getAllProducts();
         List<EntityModel<ProductDTO>> productDTOS = products.stream()
@@ -42,7 +43,7 @@ public class ProductController {
         return ResponseEntity.ok(productDTOS);
     }
 
-    @GetMapping("/available")
+    @GetMapping(value = "/available",produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<EntityModel<ProductDTO>>> getAllAvailableProducts() {
         List<Product> products = productService.getAvailableProducts();
         List<EntityModel<ProductDTO>> productDTOS = products.stream()
@@ -56,7 +57,7 @@ public class ProductController {
         return ResponseEntity.ok(productDTOS);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(value = "/{id}",produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<EntityModel<ProductDTO>> getProductById(@PathVariable Long id) {
         Product product = productService.getProductById(id);
         ProductDTO productDTO = productMapper.toDto(product);
@@ -69,7 +70,7 @@ public class ProductController {
         return ResponseEntity.ok(resource);
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<EntityModel<ProductDTO>> createProduct(@Valid @RequestBody ProductDTO productDTO) {
         Product product = productService.createProduct(productDTO);
         ProductDTO productDTO2 = productMapper.toDto(product);
@@ -89,7 +90,7 @@ public class ProductController {
     }
     */
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping(value = "/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.noContent().build();

@@ -82,13 +82,13 @@ public class OnlineShoppingKataApplication implements CommandLineRunner {
 			signupDTO.setFullName("bentouri.elmehdi");
 			Customer customer  = authenticationService.signup(signupDTO);
 
-			Cart cart = new Cart();
+			/*Cart cart = new Cart();
 			cart.setCustomer(customer);
 			customer.setCart(cart);
-			customer = customerRepository.save(customer);
+			customer = customerRepository.save(customer);*/
 			//cartRepository.save(cart);
 			System.out.println("Customer created: " + customer.getCustomerName() +" id : "+customer.getCustomerId());
-			System.out.println("Cart created for customer, cartId =  " + cart.getCartId());
+			System.out.println("Cart created for customer, cartId =  " + customer.getCart().getCartId());
 		} else {
 			System.out.println("Customer already exists.");
 		}

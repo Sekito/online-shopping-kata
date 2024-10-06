@@ -10,6 +10,7 @@ import com.bem.onlineshopping.security.JwtService;
 import com.bem.onlineshopping.service.AuthenticationService;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,7 +31,7 @@ public class AuthenticationController {
         this.customerMapper = customerMapper;
     }
 
-    @PostMapping("/signup")
+    @PostMapping(value = "/signup" , produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<EntityModel<CustomerDTO>> register(@RequestBody SignupDTO signupDTO) {
         Customer registeredUser = authenticationService.signup(signupDTO);
 
@@ -41,7 +42,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(resource);
     }
 
-    @PostMapping("/login")
+    @PostMapping(value = "/login", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<EntityModel<LoginResponse>> authenticate(@RequestBody LoginDTO loginDto) {
         Customer authenticatedUser = authenticationService.authenticate(loginDto);
 
@@ -58,7 +59,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(resource);
     }
 
-    @GetMapping("/me")
+    @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<EntityModel<CustomerDTO>> authenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Customer currentUser = (Customer) authentication.getPrincipal();

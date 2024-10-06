@@ -4,6 +4,7 @@ package com.bem.onlineshopping.service;
 import com.bem.onlineshopping.dto.LoginDTO;
 import com.bem.onlineshopping.dto.SignupDTO;
 import com.bem.onlineshopping.exception.EmailAlreadyExistsException;
+import com.bem.onlineshopping.model.Cart;
 import com.bem.onlineshopping.model.Customer;
 import com.bem.onlineshopping.repository.CustomerRepository;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -44,6 +45,11 @@ public class AuthenticationService {
         user.setCustomerName(input.getFullName());
         user.setEmail(input.getEmail());
         user.setPassword(passwordEncoder.encode(input.getPassword()));
+
+        Cart cart = new Cart();
+        cart.setCustomer(user);
+        user.setCart(cart);
+        user = customerRepository.save(user);
 
         return customerRepository.save(user);
     }

@@ -42,8 +42,9 @@ public class CartService {
 
     @Transactional
     public Cart addProductToCart(AddProductToCartDTO dto) {
-        Cart cart = cartRepository.findById(dto.getCartId())
+        Cart cart = cartRepository.findByCustomer_CustomerId(dto.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
+
         Product product = productRepository.findById(dto.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
@@ -81,7 +82,7 @@ public class CartService {
     @Transactional
     public Cart removeProductFromCart(Long cartProductId) {
 
-        CartProduct cartProduct = cartProductRepository.findById(cartProductId).orElseThrow(() -> new RuntimeException("CartProduct not found"));
+        CartProduct cartProduct = cartProductRepository.findById(cartProductId).orElseThrow(() -> new ResourceNotFoundException("CartProduct not found"));
 
 
         Product product = cartProduct.getProduct();

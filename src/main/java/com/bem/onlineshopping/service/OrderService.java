@@ -2,6 +2,7 @@ package com.bem.onlineshopping.service;
 
 import com.bem.onlineshopping.dto.OrderDTO;
 import com.bem.onlineshopping.dto.OrderTrackingResponseDTO;
+import com.bem.onlineshopping.exception.BadRequestException;
 import com.bem.onlineshopping.exception.ResourceNotFoundException;
 import com.bem.onlineshopping.mappers.OrderMapper;
 import com.bem.onlineshopping.model.Cart;
@@ -47,6 +48,10 @@ public class OrderService {
     public Order confirmOrder(Long cartId) {
         Cart cart = cartRepository.findById(cartId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
+
+        if (cart.getCartProductList().size() == 0){
+            throw new BadRequestException("Cart is empty");
+        }
 
         Order order = new Order();
         order.setCustomer(cart.getCustomer());
