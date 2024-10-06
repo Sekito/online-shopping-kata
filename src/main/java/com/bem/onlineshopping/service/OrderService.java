@@ -23,19 +23,24 @@ import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
-    @Autowired
-    private OrderRepository orderRepository;
 
-    @Autowired
-    private CartRepository cartRepository;
-
-    @Autowired
-    private CustomerRepository customerRepository;
-
-    @Autowired
-    private OrderMapper orderMapper;
+    private final OrderRepository orderRepository;
+    private final CartRepository cartRepository;
+    private final CustomerRepository customerRepository;
+    private final OrderMapper orderMapper;
 
     private static final int DELIVERY_DAYS = 3;
+
+    @Autowired
+    public OrderService(OrderRepository orderRepository,
+                        CartRepository cartRepository,
+                        CustomerRepository customerRepository,
+                        OrderMapper orderMapper) {
+        this.orderRepository = orderRepository;
+        this.cartRepository = cartRepository;
+        this.customerRepository = customerRepository;
+        this.orderMapper = orderMapper;
+    }
 
 
     @Transactional

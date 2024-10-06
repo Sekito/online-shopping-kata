@@ -21,14 +21,19 @@ import java.util.Optional;
 
 @Service
 public class CartService {
-    @Autowired
-    private CartRepository cartRepository;
+
+    private final CartRepository cartRepository;
+    private final ProductRepository productRepository;
+    private final CartProductRepository cartProductRepository;
 
     @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private CartProductRepository cartProductRepository;
+    public CartService(CartRepository cartRepository,
+                       ProductRepository productRepository,
+                       CartProductRepository cartProductRepository) {
+        this.cartRepository = cartRepository;
+        this.productRepository = productRepository;
+        this.cartProductRepository = cartProductRepository;
+    }
 
 
     public Cart getCartById(Long cartId) {

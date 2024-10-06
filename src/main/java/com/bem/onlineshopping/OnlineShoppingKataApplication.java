@@ -16,17 +16,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 @SpringBootApplication
 public class OnlineShoppingKataApplication implements CommandLineRunner {
 
-	@Autowired
-	private ProductRepository productRepository;
+	private final ProductRepository productRepository;
+	private final CustomerRepository customerRepository;
+	private final CartRepository cartRepository;
+	private final AuthenticationService authenticationService;
 
 	@Autowired
-	private CustomerRepository customerRepository;
-
-	@Autowired
-	private CartRepository cartRepository;
-
-	@Autowired
-	private  AuthenticationService authenticationService;
+	public OnlineShoppingKataApplication(ProductRepository productRepository,
+										 CustomerRepository customerRepository,
+										 CartRepository cartRepository,
+										 AuthenticationService authenticationService) {
+		this.productRepository = productRepository;
+		this.customerRepository = customerRepository;
+		this.cartRepository = cartRepository;
+		this.authenticationService = authenticationService;
+	}
 
 	public static void main(String[] args) {
 		SpringApplication.run(OnlineShoppingKataApplication.class, args);

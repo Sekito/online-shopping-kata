@@ -18,14 +18,19 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/carts")
 public class CartController {
-    @Autowired
-    private CartService cartService;
+
+    private final CartService cartService;
+    private final CartMapper cartMapper;
+    private final CartProductMapper cartProductMapper;
 
     @Autowired
-    private CartMapper cartMapper;
-
-    @Autowired
-    private CartProductMapper cartProductMapper;
+    public CartController(CartService cartService,
+                          CartMapper cartMapper,
+                          CartProductMapper cartProductMapper) {
+        this.cartService = cartService;
+        this.cartMapper = cartMapper;
+        this.cartProductMapper = cartProductMapper;
+    }
 
     @GetMapping("/{cartId}")
     public ResponseEntity<CartDTO> getCartById(@PathVariable Long cartId) {

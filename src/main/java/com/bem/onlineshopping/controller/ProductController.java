@@ -15,11 +15,16 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
-    @Autowired
-    private ProductService productService;
+
+    private final ProductService productService;
+    private final ProductMapper productMapper;
 
     @Autowired
-    private ProductMapper productMapper;
+    public ProductController(ProductService productService,
+                             ProductMapper productMapper) {
+        this.productService = productService;
+        this.productMapper = productMapper;
+    }
 
     @GetMapping
     public ResponseEntity<List<ProductDTO>> getAllProducts() {

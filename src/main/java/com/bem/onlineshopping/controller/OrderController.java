@@ -17,11 +17,16 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
-    @Autowired
-    private OrderService orderService;
+
+    private final OrderService orderService;
+    private final OrderMapper orderMapper;
 
     @Autowired
-    private OrderMapper orderMapper;
+    public OrderController(OrderService orderService,
+                           OrderMapper orderMapper) {
+        this.orderService = orderService;
+        this.orderMapper = orderMapper;
+    }
 
     @PostMapping("/confirm/{cartId}")
     public ResponseEntity<OrderDTO> confirmOrder(@PathVariable Long cartId) {

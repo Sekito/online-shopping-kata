@@ -13,17 +13,19 @@ import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
-    @Autowired
-    private ProductRepository productRepository;
+
+    private final ProductRepository productRepository;
+    private final ProductMapper productMapper;
 
     @Autowired
-    private ProductMapper productMapper;
+    public ProductService(ProductRepository productRepository,
+                          ProductMapper productMapper) {
+        this.productRepository = productRepository;
+        this.productMapper = productMapper;
+    }
 
     public List<Product> getAllProducts() {
         return productRepository.findAll();
-      /*  return productRepository.findAll().stream()
-                .map(productMapper::toDto)
-                .collect(Collectors.toList());*/
     }
 
     public Product getProductById(Long id) {
