@@ -1,11 +1,15 @@
 package com.bem.onlineshopping.controller;
 
+import com.bem.onlineshopping.dto.CustomerDTO;
 import com.bem.onlineshopping.dto.LoginDTO;
 import com.bem.onlineshopping.dto.LoginResponse;
 import com.bem.onlineshopping.dto.SignupDTO;
+import com.bem.onlineshopping.mappers.CustomerMapper;
 import com.bem.onlineshopping.model.Customer;
 import com.bem.onlineshopping.security.JwtService;
 import com.bem.onlineshopping.service.AuthenticationService;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,20 +22,27 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
 
-    public AuthenticationController(JwtService jwtService, AuthenticationService authenticationService) {
+    private final CustomerMapper customerMapper;
+
+    public AuthenticationController(JwtService jwtService, AuthenticationService authenticationService,CustomerMapper customerMapper) {
         this.jwtService = jwtService;
         this.authenticationService = authenticationService;
+        this.customerMapper = customerMapper;
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<Customer> register(@RequestBody SignupDTO signupDTO) {
+    public ResponseEntity<EntityModel<CustomerDTO>> register(@RequestBody SignupDTO signupDTO) {
         Customer registeredUser = authenticationService.signup(signupDTO);
 
-        return ResponseEntity.ok(registeredUser);
+        EntityModel<CustomerDTO> resource = EntityModel.of(customerMapper.toDto(registeredUser));
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AuthenticationController.class).register(signupDTO)).withSelfRel());
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AuthenticationController.class).authenticate(new LoginDTO())).withRel("login"));
+
+        return ResponseEntity.ok(resource);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginDTO loginDto) {
+    public ResponseEntity<EntityModel<LoginResponse>> authenticate(@RequestBody LoginDTO loginDto) {
         Customer authenticatedUser = authenticationService.authenticate(loginDto);
 
         String jwtToken = jwtService.generateToken(authenticatedUser);
@@ -40,15 +51,24 @@ public class AuthenticationController {
         loginResponse.setToken(jwtToken);
         loginResponse.setExpiresIn(jwtService.getExpirationTime());
 
-        return ResponseEntity.ok(loginResponse);
+        EntityModel<LoginResponse> resource = EntityModel.of(loginResponse);
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AuthenticationController.class).authenticate(loginDto)).withSelfRel());
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AuthenticationController.class).authenticatedUser()).withRel("me"));
+
+        return ResponseEntity.ok(resource);
     }
 
     @GetMapping("/me")
-    public ResponseEntity<Customer> authenticatedUser() {
+    public ResponseEntity<EntityModel<CustomerDTO>> authenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
         Customer currentUser = (Customer) authentication.getPrincipal();
 
-        return ResponseEntity.ok(currentUser);
+        EntityModel<CustomerDTO> resource = EntityModel.of(customerMapper.toDto(currentUser));
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AuthenticationController.class).authenticatedUser()).withSelfRel());
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AuthenticationController.class).register(new SignupDTO())).withRel("signup"));
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(AuthenticationController.class).authenticate(new LoginDTO())).withRel("login"));
+
+        return ResponseEntity.ok(resource);
     }
 }
+

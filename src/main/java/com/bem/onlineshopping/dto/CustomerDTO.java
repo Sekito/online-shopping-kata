@@ -5,9 +5,10 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import org.springframework.hateoas.RepresentationModel;
 
 @Data
-public class CustomerDTO {
+public class CustomerDTO extends RepresentationModel<CustomerDTO> {
     private Long customerId;
     @NotNull(message = "Customer name cannot be null")
     @NotEmpty(message = "Customer name cannot be empty")

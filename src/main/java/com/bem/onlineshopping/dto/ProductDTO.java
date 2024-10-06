@@ -4,9 +4,10 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
+import org.springframework.hateoas.RepresentationModel;
 
 @Data
-public class ProductDTO {
+public class ProductDTO extends RepresentationModel<ProductDTO> {
     private Long productId;
     @NotNull(message = "Product name cannot be null")
     private String name;

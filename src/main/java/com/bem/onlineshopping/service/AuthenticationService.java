@@ -3,12 +3,16 @@ package com.bem.onlineshopping.service;
 
 import com.bem.onlineshopping.dto.LoginDTO;
 import com.bem.onlineshopping.dto.SignupDTO;
+import com.bem.onlineshopping.exception.EmailAlreadyExistsException;
 import com.bem.onlineshopping.model.Customer;
 import com.bem.onlineshopping.repository.CustomerRepository;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class AuthenticationService {
@@ -28,7 +32,14 @@ public class AuthenticationService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    public boolean emailExists(String email) {
+        return customerRepository.findByEmail(email).isPresent();
+    }
+
     public Customer signup(SignupDTO input) {
+        if (emailExists(input.getEmail())) {
+            throw new EmailAlreadyExistsException("Email already in use: " + input.getEmail());
+        }
         Customer user = new Customer();
         user.setCustomerName(input.getFullName());
         user.setEmail(input.getEmail());
@@ -38,14 +49,22 @@ public class AuthenticationService {
     }
 
     public Customer authenticate(LoginDTO input) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        input.getEmail(),
-                        input.getPassword()
-                )
-        );
+        Optional<Customer> optionalCustomer = customerRepository.findByEmail(input.getEmail());
+        if (optionalCustomer.isEmpty()) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
 
-        return customerRepository.findByEmail(input.getEmail())
-                .orElseThrow();
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            input.getEmail(),
+                            input.getPassword()
+                    )
+            );
+        } catch (BadCredentialsException e) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
+
+        return optionalCustomer.get();
     }
 }

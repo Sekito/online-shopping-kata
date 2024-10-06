@@ -2,12 +2,13 @@ package com.bem.onlineshopping.dto;
 
 import com.bem.onlineshopping.model.OrderStatusEnum;
 import lombok.Data;
+import org.springframework.hateoas.RepresentationModel;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Data
-public class OrderDTO {
+public class OrderDTO extends RepresentationModel<OrderDTO> {
     private Long orderId;
     private LocalDate orderCreatedAt;
     private OrderStatusEnum orderStatus;

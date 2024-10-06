@@ -6,6 +6,8 @@ import com.bem.onlineshopping.model.Product;
 import com.bem.onlineshopping.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,41 +29,65 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProductDTO>> getAllProducts() {
+    public ResponseEntity<List<EntityModel<ProductDTO>>> getAllProducts() {
         List<Product> products = productService.getAllProducts();
-        List<ProductDTO> productDTOS = products.stream()
-                .map(productMapper::toDto)
+        List<EntityModel<ProductDTO>> productDTOS = products.stream()
+                .map(product -> {
+                    ProductDTO productDTO = productMapper.toDto(product);
+                    EntityModel<ProductDTO> resource = EntityModel.of(productDTO);
+                    resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ProductController.class).getProductById(product.getProductId())).withSelfRel());
+                    return resource;
+                })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(productDTOS);
     }
 
     @GetMapping("/available")
-    public ResponseEntity<List<ProductDTO>> getAllAvailableProducts() {
+    public ResponseEntity<List<EntityModel<ProductDTO>>> getAllAvailableProducts() {
         List<Product> products = productService.getAvailableProducts();
-        List<ProductDTO> productDTOS = products.stream()
-                .map(productMapper::toDto)
+        List<EntityModel<ProductDTO>> productDTOS = products.stream()
+                .map(product -> {
+                    ProductDTO productDTO = productMapper.toDto(product);
+                    EntityModel<ProductDTO> resource = EntityModel.of(productDTO);
+                    resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ProductController.class).getProductById(product.getProductId())).withSelfRel());
+                    return resource;
+                })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(productDTOS);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) {
+    public ResponseEntity<EntityModel<ProductDTO>> getProductById(@PathVariable Long id) {
         Product product = productService.getProductById(id);
         ProductDTO productDTO = productMapper.toDto(product);
-        return ResponseEntity.ok(productDTO);
+
+        EntityModel<ProductDTO> resource = EntityModel.of(productDTO);
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ProductController.class).getProductById(id)).withSelfRel());
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ProductController.class).getAllProducts()).withRel("allProducts"));
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ProductController.class).getAllAvailableProducts()).withRel("availableProducts"));
+
+        return ResponseEntity.ok(resource);
     }
 
     @PostMapping
-    public ResponseEntity<ProductDTO> createProduct(@Valid @RequestBody ProductDTO productDTO) {
+    public ResponseEntity<EntityModel<ProductDTO>> createProduct(@Valid @RequestBody ProductDTO productDTO) {
         Product product = productService.createProduct(productDTO);
         ProductDTO productDTO2 = productMapper.toDto(product);
-        return ResponseEntity.ok(productDTO2);
+
+        EntityModel<ProductDTO> resource = EntityModel.of(productDTO2);
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ProductController.class).getProductById(product.getProductId())).withSelfRel());
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ProductController.class).getAllProducts()).withRel("allProducts"));
+
+        return ResponseEntity.ok(resource);
     }
 
-    /*@PutMapping("/{id}")
-    public ResponseEntity<ProductDTO> updateProduct(@PathVariable Long id,@Valid @RequestBody ProductDTO productDTO) {
-        return ResponseEntity.ok(productService.updateProduct(id, productDTO));
-    }*/
+    /* Uncomment if needed
+    @PutMapping("/{id}")
+    public ResponseEntity<ProductDTO> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductDTO productDTO) {
+        Product product = productService.updateProduct(id, productDTO);
+        return ResponseEntity.ok(productMapper.toDto(product));
+    }
+    */
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {

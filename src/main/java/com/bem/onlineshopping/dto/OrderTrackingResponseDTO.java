@@ -1,11 +1,12 @@
 package com.bem.onlineshopping.dto;
 
 import lombok.Data;
+import org.springframework.hateoas.RepresentationModel;
 
 import java.time.LocalDate;
 
 @Data
-public class OrderTrackingResponseDTO {
+public class OrderTrackingResponseDTO extends RepresentationModel<OrderTrackingResponseDTO> {
     private String trackingNumber;
     private String orderStatus;
     private LocalDate orderStatusDate;

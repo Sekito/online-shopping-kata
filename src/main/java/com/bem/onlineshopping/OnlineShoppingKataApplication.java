@@ -65,7 +65,11 @@ public class OnlineShoppingKataApplication implements CommandLineRunner {
 		product3.setInventory(3);
 		productRepository.save(product3);
 
-
+		Product product4 = new Product();
+		product4.setName("Product 4");
+		product4.setPrice(8.99);
+		product4.setInventory(0);
+		productRepository.save(product4);
 
 		if (customerRepository.count() == 0) {
 			/*Customer customer = new Customer();

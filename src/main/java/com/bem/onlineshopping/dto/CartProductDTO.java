@@ -3,9 +3,10 @@ package com.bem.onlineshopping.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import org.springframework.hateoas.RepresentationModel;
 
 @Data
-public class CartProductDTO {
+public class CartProductDTO extends RepresentationModel<CartProductDTO> {
     private Long cartProductId;
     @NotNull(message = "Product cannot be null")
     private ProductDTO product;
