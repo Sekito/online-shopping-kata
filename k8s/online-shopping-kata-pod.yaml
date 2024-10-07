@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: online-shopping-kata-pod
+spec:
+  containers:
+    - name: online-shopping-kata
+      image: docker.io/sekito/online-shopping-kata
+      ports:
+        - containerPort: 8080

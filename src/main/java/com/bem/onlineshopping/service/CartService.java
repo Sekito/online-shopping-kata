@@ -26,7 +26,7 @@ public class CartService {
     private final ProductRepository productRepository;
     private final CartProductRepository cartProductRepository;
 
-    @Autowired
+
     public CartService(CartRepository cartRepository,
                        ProductRepository productRepository,
                        CartProductRepository cartProductRepository) {

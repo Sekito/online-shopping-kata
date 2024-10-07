@@ -97,18 +97,10 @@ public class OrderService {
         customerRepository.findById(customerId).orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
         List<Order> orders = orderRepository.findByCustomer_CustomerId(customerId);
         return orders;
-        /*return orders.stream()
-                .map(orderMapper::toDto)
-                .collect(Collectors.toList());*/
     }
 
     public Order trackOrder(Long orderId) {
         return getOrderById(orderId);
     }
 
-   /* public OrderTrackingResponseDTO trackOrder(Long orderId) {
-        OrderDTO order = getOrderById(orderId);
-        OrderTrackingResponseDTO response = orderMapper.toTrackingResponseDTO(order);
-        return response;
-    }*/
 }

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: online-shopping-kata
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: online-shopping-kata
+  template:
+    metadata:
+      labels:
+        app: online-shopping-kata
+    spec:
+      containers:
+        - name: online-shopping-kata
+          image: docker.io/sekito/online-shopping-kata
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: online-shopping-kata
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080
+  selector:
+    app: online-shopping-kata
