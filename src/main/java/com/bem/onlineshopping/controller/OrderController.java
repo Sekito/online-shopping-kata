@@ -12,6 +12,13 @@ import com.bem.onlineshopping.model.Order;
 import com.bem.onlineshopping.model.OrderStatusEnum;
 import com.bem.onlineshopping.service.CartService;
 import com.bem.onlineshopping.service.OrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -26,6 +33,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Tag(name = "Order Management", description = "Operations related to Orders management")
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
@@ -37,14 +45,23 @@ public class OrderController {
 
     @Autowired
     public OrderController(OrderService orderService,
-                           OrderMapper orderMapper,CartService cartService) {
+                           OrderMapper orderMapper, CartService cartService) {
         this.orderService = orderService;
         this.orderMapper = orderMapper;
         this.cartService = cartService;
     }
 
+    @Operation(summary = "Confirm an order", description = "Confirm the order associated with a specific cart ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order confirmed successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = OrderDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "404", description = "Cart not found")
+    })
     @PostMapping(value = "/confirm/{cartId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<EntityModel<OrderDTO>> confirmOrder(@NotNull @PathVariable Long cartId) {
+    public ResponseEntity<EntityModel<OrderDTO>> confirmOrder(@Parameter(description = "ID of the cart to confirm the order", required = true)
+                                                              @NotNull(message = "cartId is null") @PathVariable Long cartId) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long currentUserId = ((Customer) authentication.getPrincipal()).getCustomerId();
@@ -66,8 +83,18 @@ public class OrderController {
         return ResponseEntity.ok(resource);
     }
 
+
+    @Operation(summary = "Get order by ID", description = "Retrieve a specific order using its ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order retrieved successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = OrderDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     @GetMapping(value = "/{orderId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<EntityModel<OrderDTO>> getOrderById(@NotNull @PathVariable Long orderId) {
+    public ResponseEntity<EntityModel<OrderDTO>> getOrderById(@Parameter(description = "ID of the order to retrieve", required = true)
+                                                              @NotNull(message = "orderId is null") @PathVariable Long orderId) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long currentUserId = ((Customer) authentication.getPrincipal()).getCustomerId();
@@ -89,24 +116,16 @@ public class OrderController {
     }
 
 
-   /* @GetMapping
-    public ResponseEntity<List<OrderDTO>> getAllOrders() {
-        List<Order> orders = orderService.getAllOrders();
-        List<OrderDTO> orderDTOs = orders.stream()
-                .map(orderMapper::toDto)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(orderDTOs);
-    }
-
-    @GetMapping("/{orderId}/status")
-    public ResponseEntity<OrderStatusEnum> getOrderStatus(@PathVariable Long orderId) {
-        OrderDTO orderDTO = orderService.getOrderById(orderId);
-        return ResponseEntity.ok(orderDTO.getOrderStatus());
-    }
-    */
-
+    @Operation(summary = "Get orders by customer ID", description = "Retrieve all orders associated with a specific customer")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Orders retrieved successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = OrderDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Access denied")
+    })
     @GetMapping(value = "/customer/{customerId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<EntityModel<OrderDTO>>> getOrdersByCustomerId(@NotNull @PathVariable Long customerId) {
+    public ResponseEntity<List<EntityModel<OrderDTO>>> getOrdersByCustomerId(@Parameter(description = "ID of the customer to retrieve orders for", required = true)
+                                                                             @NotNull(message = "customerId is null") @PathVariable Long customerId) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long currentUserId = ((Customer) authentication.getPrincipal()).getCustomerId();
@@ -129,8 +148,17 @@ public class OrderController {
         return ResponseEntity.ok(orderDTOs);
     }
 
+    @Operation(summary = "Track an order", description = "Retrieve tracking information for a specific order")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order tracking information retrieved successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = OrderTrackingResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "404", description = "Order not found")
+    })
     @GetMapping(value = "/track/{orderId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<EntityModel<OrderTrackingResponseDTO>> trackOrder(@PathVariable("orderId") Long orderId) {
+    public ResponseEntity<EntityModel<OrderTrackingResponseDTO>> trackOrder(@Parameter(description = "ID of the order to track", required = true)
+                                                                            @NotNull(message = "orderId is null") @PathVariable("orderId") Long orderId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long currentUserId = ((Customer) authentication.getPrincipal()).getCustomerId();
         Order order = orderService.getOrderById(orderId);

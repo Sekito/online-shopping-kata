@@ -8,6 +8,14 @@ import com.bem.onlineshopping.mappers.CustomerMapper;
 import com.bem.onlineshopping.model.Customer;
 import com.bem.onlineshopping.security.JwtService;
 import com.bem.onlineshopping.service.AuthenticationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.MediaType;
@@ -16,6 +24,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+
+@Tag(name = "Authentication", description = "Operations related to Authentication")
 @RequestMapping("/api/auth")
 @RestController
 public class AuthenticationController {
@@ -25,14 +35,22 @@ public class AuthenticationController {
 
     private final CustomerMapper customerMapper;
 
-    public AuthenticationController(JwtService jwtService, AuthenticationService authenticationService,CustomerMapper customerMapper) {
+    public AuthenticationController(JwtService jwtService, AuthenticationService authenticationService, CustomerMapper customerMapper) {
         this.jwtService = jwtService;
         this.authenticationService = authenticationService;
         this.customerMapper = customerMapper;
     }
 
-    @PostMapping(value = "/signup" , produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<EntityModel<CustomerDTO>> register(@RequestBody SignupDTO signupDTO) {
+    @Operation(summary = "User signup", description = "Register a new user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User registered successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CustomerDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid signup data")
+    })
+    @PostMapping(value = "/signup", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<EntityModel<CustomerDTO>> register(@Parameter(description = "Signup details for the new user", required = true)
+                                                             @Valid @RequestBody SignupDTO signupDTO) {
         Customer registeredUser = authenticationService.signup(signupDTO);
 
         EntityModel<CustomerDTO> resource = EntityModel.of(customerMapper.toDto(registeredUser));
@@ -42,8 +60,17 @@ public class AuthenticationController {
         return ResponseEntity.ok(resource);
     }
 
+
+    @Operation(summary = "User login", description = "Authenticate a user and return a JWT token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User authenticated successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = LoginResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Invalid login credentials")
+    })
     @PostMapping(value = "/login", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<EntityModel<LoginResponse>> authenticate(@RequestBody LoginDTO loginDto) {
+    public ResponseEntity<EntityModel<LoginResponse>> authenticate(@Parameter(description = "Login details for the user", required = true)
+                                                                   @Valid @RequestBody LoginDTO loginDto) {
         Customer authenticatedUser = authenticationService.authenticate(loginDto);
 
         String jwtToken = jwtService.generateToken(authenticatedUser);
@@ -59,6 +86,13 @@ public class AuthenticationController {
         return ResponseEntity.ok(resource);
     }
 
+    @Operation(summary = "Get authenticated user info", description = "Retrieve the details of the currently authenticated user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Authenticated user details retrieved successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CustomerDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Access denied")
+    })
     @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<EntityModel<CustomerDTO>> authenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
