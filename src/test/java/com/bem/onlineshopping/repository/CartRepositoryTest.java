@@ -1,65 +1,55 @@
 package com.bem.onlineshopping.repository;
 
+import com.bem.onlineshopping.model.Cart;
 import com.bem.onlineshopping.model.Customer;
-import com.bem.onlineshopping.model.Order;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.annotation.Rollback;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
+import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@DataJpaTest
-@Rollback
-public class OrderRepositoryTest {
+@ExtendWith(MockitoExtension.class)
+public class CartRepositoryTest {
 
-    @Autowired
-    private OrderRepository orderRepository;
+    @Mock
+    private CartRepository cartRepository;
 
-    @Autowired
-    private CustomerRepository customerRepository;
-
-    private Customer customer;
+    private Cart cart;
 
     @BeforeEach
     public void setUp() {
-        customer = new Customer();
-        customer.setCustomerName("Test Customer");
-        customerRepository.save(customer);
+        cart = new Cart();
+        cart.setCartId(1L);
+
+        Customer customer = new Customer();
+        customer.setCustomerId(1L);
+        cart.setCustomer(customer);
     }
 
     @Test
-    public void findByCustomer_CustomerId_ShouldReturnOrders() {
-        Order order1 = new Order();
-        order1.setCustomer(customer);
-        orderRepository.save(order1);
+    public void testFindByCustomer_CustomerId_Success() {
+        when(cartRepository.findByCustomer_CustomerId(1L)).thenReturn(Optional.of(cart));
 
-        Order order2 = new Order();
-        order2.setCustomer(customer);
-        orderRepository.save(order2);
+        Optional<Cart> foundCart = cartRepository.findByCustomer_CustomerId(1L);
 
-        List<Order> foundOrders = orderRepository.findByCustomer_CustomerId(customer.getCustomerId());
-
-        assertThat(foundOrders).hasSize(2);
-        assertThat(foundOrders).containsExactlyInAnyOrder(order1, order2);
+        assertTrue(foundCart.isPresent());
+        assertEquals(cart.getCartId(), foundCart.get().getCartId());
+        verify(cartRepository).findByCustomer_CustomerId(1L);
     }
 
     @Test
-    public void findByCustomer_CustomerId_ShouldReturnEmptyListWhenNoOrders() {
-        List<Order> foundOrders = orderRepository.findByCustomer_CustomerId(customer.getCustomerId());
+    public void testFindByCustomer_CustomerId_NotFound() {
+        when(cartRepository.findByCustomer_CustomerId(1L)).thenReturn(Optional.empty());
 
-        assertThat(foundOrders).isEmpty();
-    }
+        Optional<Cart> foundCart = cartRepository.findByCustomer_CustomerId(1L);
 
-    @Test
-    public void findByCustomer_CustomerId_ShouldReturnEmptyListForNonExistentCustomer() {
-        Long nonExistentCustomerId = 999L;
-
-        List<Order> foundOrders = orderRepository.findByCustomer_CustomerId(nonExistentCustomerId);
-
-        assertThat(foundOrders).isEmpty();
+        assertFalse(foundCart.isPresent());
+        verify(cartRepository).findByCustomer_CustomerId(1L);
     }
 }

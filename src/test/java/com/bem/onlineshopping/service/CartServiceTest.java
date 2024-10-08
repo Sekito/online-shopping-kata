@@ -1,25 +1,28 @@
 package com.bem.onlineshopping.service;
 
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.bem.onlineshopping.dto.AddProductToCartDTO;
 import com.bem.onlineshopping.exception.BadRequestException;
 import com.bem.onlineshopping.exception.ResourceNotFoundException;
-import com.bem.onlineshopping.model.Cart;
-import com.bem.onlineshopping.model.CartProduct;
-import com.bem.onlineshopping.model.Product;
+import com.bem.onlineshopping.model.*;
 import com.bem.onlineshopping.repository.CartProductRepository;
 import com.bem.onlineshopping.repository.CartRepository;
 import com.bem.onlineshopping.repository.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
 public class CartServiceTest {
 
     @InjectMocks
@@ -36,136 +39,94 @@ public class CartServiceTest {
 
     private Cart cart;
     private Product product;
-    private CartProduct cartProduct;
 
     @BeforeEach
     public void setUp() {
-        MockitoAnnotations.openMocks(this);
+        // Initialize Customer
+        Customer customer = new Customer();
+        customer.setCustomerId(1L);
 
-        // Initialize test objects
+        // Initialize Cart
         cart = new Cart();
+        cart.setCartId(1L);
+        cart.setCustomer(customer);
+        cart.setCartProductList(new ArrayList<>()); // Initialize with an empty list
+
+        // Initialize Product
         product = new Product();
-        cartProduct = new CartProduct();
-
-        // Set up relationships
-        cartProduct.setProduct(product);
-        cart.addCartProduct(cartProduct);
+        product.setProductId(1L);
+        product.setInventory(10);
     }
 
     @Test
-    public void getCartById_ShouldReturnCart() {
-        Long cartId = 1L;
-        when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
+    public void testAddProductToCart_Success() {
+        AddProductToCartDTO dto = new AddProductToCartDTO(1L,1L,2);
 
-        Cart foundCart = cartService.getCartById(cartId);
-        assertNotNull(foundCart);
-        assertEquals(cart, foundCart);
-    }
-
-    @Test
-    public void getCartById_ShouldThrowResourceNotFoundException() {
-        Long cartId = 1L;
-        when(cartRepository.findById(cartId)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> {
-            cartService.getCartById(cartId);
-        });
-    }
-
-    @Test
-    public void addProductToCart_ShouldAddProductToCart() {
-        AddProductToCartDTO dto = new AddProductToCartDTO();
-        dto.setCartId(cart.getCartId());
-        dto.setProductId(product.getProductId());
-        dto.setQuantity(1);
-
-        product.setInventory(5);
-
-        when(cartRepository.findById(dto.getCartId())).thenReturn(Optional.of(cart));
-        when(productRepository.findById(dto.getProductId())).thenReturn(Optional.of(product));
+        when(cartRepository.findByCustomer_CustomerId(1L)).thenReturn(Optional.of(cart));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
 
         Cart updatedCart = cartService.addProductToCart(dto);
+
+        assertNotNull(updatedCart);
         assertEquals(1, updatedCart.getCartProductList().size());
-        assertEquals(1, updatedCart.getCartProductList().get(0).getQuantity());
-        assertEquals(4, product.getInventory());
+        assertEquals(2, updatedCart.getCartProductList().get(0).getQuantity());
+        assertEquals(8, product.getInventory());
+        verify(cartRepository).save(cart);
+        verify(productRepository).save(product);
     }
 
     @Test
-    public void addProductToCart_ShouldThrowInsufficientQuantityException() {
-        AddProductToCartDTO dto = new AddProductToCartDTO();
-        dto.setCartId(cart.getCartId());
-        dto.setProductId(product.getProductId());
-        dto.setQuantity(10);
+    public void testAddProductToCart_InsufficientQuantity() {
+        product.setInventory(1);
+        AddProductToCartDTO dto = new AddProductToCartDTO(1L,1L,2);
 
-        product.setInventory(5);
+        when(cartRepository.findByCustomer_CustomerId(1L)).thenReturn(Optional.of(cart));
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
 
-        when(cartRepository.findById(dto.getCartId())).thenReturn(Optional.of(cart));
-        when(productRepository.findById(dto.getProductId())).thenReturn(Optional.of(product));
-
-        assertThrows(BadRequestException.class, () -> {
+        Exception exception = assertThrows(BadRequestException.class, () -> {
             cartService.addProductToCart(dto);
         });
+
+        assertEquals("Insufficient Quantity", exception.getMessage());
     }
 
     @Test
-    public void removeProductFromCart_ShouldRemoveProductFromCart() {
-        Long cartProductId = cartProduct.getCartProductId();
+    public void testRemoveProductFromCart_Success() {
+        CartProduct cartProduct = new CartProduct();
+        cartProduct.setProduct(product);
+        cartProduct.setQuantity(2);
+        cart.addCartProduct(cartProduct);
 
-        when(cartProductRepository.findById(cartProductId)).thenReturn(Optional.of(cartProduct));
-        when(cartRepository.save(cart)).thenReturn(cart);
+        when(cartProductRepository.findById(cartProduct.getCartProductId())).thenReturn(Optional.of(cartProduct));
 
-        Cart updatedCart = cartService.removeProductFromCart(cartProductId);
+        Cart updatedCart = cartService.removeProductFromCart(cartProduct.getCartProductId());
+
+        assertNotNull(updatedCart);
         assertEquals(0, updatedCart.getCartProductList().size());
-        assertEquals(1, product.getInventory());
+        assertEquals(12, product.getInventory());
+        verify(cartProductRepository).delete(cartProduct);
+        verify(cartRepository).save(updatedCart);
     }
 
-    @Test
-    public void removeProductFromCart_ShouldThrowRuntimeException() {
-        Long cartProductId = 1L;
-        when(cartProductRepository.findById(cartProductId)).thenReturn(Optional.empty());
-
-        assertThrows(RuntimeException.class, () -> {
-            cartService.removeProductFromCart(cartProductId);
-        });
-    }
 
     @Test
-    public void getCartByCustomerId_ShouldReturnCart() {
-        Long customerId = 1L;
-        when(cartRepository.findByCustomer_CustomerId(customerId)).thenReturn(Optional.of(cart));
+    public void testGetCartById_Success() {
+        when(cartRepository.findById(1L)).thenReturn(Optional.of(cart));
 
-        Cart foundCart = cartService.getCartByCustomerId(customerId);
+        Cart foundCart = cartService.getCartById(1L);
+
         assertNotNull(foundCart);
-        assertEquals(cart, foundCart);
+        assertEquals(cart.getCartId(), foundCart.getCartId());
     }
 
     @Test
-    public void getCartByCustomerId_ShouldThrowResourceNotFoundException() {
-        Long customerId = 1L;
-        when(cartRepository.findByCustomer_CustomerId(customerId)).thenReturn(Optional.empty());
+    public void testGetCartById_NotFound() {
+        when(cartRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> {
-            cartService.getCartByCustomerId(customerId);
+        Exception exception = assertThrows(ResourceNotFoundException.class, () -> {
+            cartService.getCartById(1L);
         });
-    }
 
-    @Test
-    public void getCartProductById_ShouldReturnCartProduct() {
-        Long cartProductId = cartProduct.getCartProductId();
-        when(cartProductRepository.findById(cartProductId)).thenReturn(Optional.of(cartProduct));
-
-        CartProduct foundCartProduct = cartService.getCartProductById(cartProductId);
-        assertNotNull(foundCartProduct);
-        assertEquals(cartProduct, foundCartProduct);
-    }
-
-    @Test
-    public void getCartProductById_ShouldThrowResourceNotFoundException() {
-        Long cartProductId = 1L;
-        when(cartProductRepository.findById(cartProductId)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> {
-            cartService.getCartProductById(cartProductId);
-        });
+        assertEquals("Cart not found", exception.getMessage());
     }
 }

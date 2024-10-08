@@ -49,7 +49,6 @@ public class AuthenticationService {
         Cart cart = new Cart();
         cart.setCustomer(user);
         user.setCart(cart);
-        user = customerRepository.save(user);
 
         return customerRepository.save(user);
     }

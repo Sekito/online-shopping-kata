@@ -72,21 +72,13 @@ public class OnlineShoppingKataApplication implements CommandLineRunner {
 		productRepository.save(product4);
 
 		if (customerRepository.count() == 0) {
-			/*Customer customer = new Customer();
-			customer.setCustomerName("Bentouri El Mehdi");
-			customer.setEmail("bentouri.elmehdi@example.com");
-			customer.setPassword("123456");*/
+
 			SignupDTO signupDTO = new SignupDTO();
 			signupDTO.setEmail("bentouri.elmehdi@example.com");
 			signupDTO.setPassword("123456");
 			signupDTO.setFullName("bentouri.elmehdi");
 			Customer customer  = authenticationService.signup(signupDTO);
 
-			/*Cart cart = new Cart();
-			cart.setCustomer(customer);
-			customer.setCart(cart);
-			customer = customerRepository.save(customer);*/
-			//cartRepository.save(cart);
 			System.out.println("Customer created: " + customer.getCustomerName() +" id : "+customer.getCustomerId());
 			System.out.println("Cart created for customer, cartId =  " + customer.getCart().getCartId());
 		} else {

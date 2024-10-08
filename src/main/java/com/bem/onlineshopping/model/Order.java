@@ -33,8 +33,6 @@ public class Order {
     private Customer customer;
 
     @JsonIgnore
-    //@NotNull(message = "Cart product list cannot be null")
-    //@NotEmpty(message = "Cart product list cannot be empty")
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "order")
     private List<CartProduct> cartProductList;
 

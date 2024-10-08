@@ -52,7 +52,7 @@ public class Cart {
         }
     }
 
-    private void updateCartDetails() {
+    public void updateCartDetails() {
         totalPrice = cartProductList.stream()
                 .mapToDouble(CartProduct::getTotalPrice)
                 .sum();

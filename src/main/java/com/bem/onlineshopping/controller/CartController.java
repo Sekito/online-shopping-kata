@@ -197,19 +197,34 @@ public class CartController {
     }
 
 
-    @Autowired
-    CartRepository cartRepository;
 
-    @GetMapping("/all")
+    @Operation(summary = "Update product quantity in cart", description = "Update the quantity of a specific product in the cart")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Product quantity updated successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CartDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input"),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "404", description = "Cart product not found")
+    })
+    @PatchMapping(value = "/update/quantity/{cartProductId}/{quantity}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<EntityModel<CartDTO>> updateCartProductQuantity(
+            @Parameter(description = "ID of the cart product to update", required = true)
+            @NotNull(message = "cartProductId is null") @PathVariable Long cartProductId,
+            @Parameter(description = "New quantity of the product", required = true)
+            @Min(value = 1, message = "Quantity must be at least 1") @PathVariable Integer quantity) {
 
-    public ResponseEntity<CollectionModel<CartDTO>> getAllCart() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long currentUserId = ((Customer) authentication.getPrincipal()).getCustomerId();
 
+        Cart updatedCart = cartService.updateProductQuantity(cartProductId, quantity);
+        CartDTO cartDTO = cartMapper.toDto(updatedCart);
 
-        List<Cart> carts = cartRepository.findAll();
-        List<CartDTO> cartDTO = carts.stream().map(cartMapper::toDto).collect(Collectors.toList());
+        EntityModel<CartDTO> resource = EntityModel.of(cartDTO);
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(CartController.class).updateCartProductQuantity(cartProductId, quantity)).withSelfRel());
+        resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(CartController.class).getCartById(cartDTO.getCartId())).withRel("cartDetails"));
 
-        CollectionModel<CartDTO> collectionModel = CollectionModel.of(cartDTO);
-
-        return ResponseEntity.ok(collectionModel);
+        return ResponseEntity.ok(resource);
     }
+
 }

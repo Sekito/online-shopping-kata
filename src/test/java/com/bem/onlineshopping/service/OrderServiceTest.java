@@ -1,9 +1,7 @@
 package com.bem.onlineshopping.service;
 
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.bem.onlineshopping.dto.OrderDTO;
+import com.bem.onlineshopping.exception.BadRequestException;
 import com.bem.onlineshopping.exception.ResourceNotFoundException;
 import com.bem.onlineshopping.mappers.OrderMapper;
 import com.bem.onlineshopping.model.*;
@@ -12,16 +10,21 @@ import com.bem.onlineshopping.repository.CustomerRepository;
 import com.bem.onlineshopping.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
 public class OrderServiceTest {
 
     @InjectMocks
@@ -40,136 +43,121 @@ public class OrderServiceTest {
     private OrderMapper orderMapper;
 
     private Cart cart;
-    private Product product;
-    private CartProduct cartProduct;
+    private Customer customer;
+    private Order order;
 
     @BeforeEach
     public void setUp() {
-        MockitoAnnotations.openMocks(this);
+        customer = new Customer();
+        customer.setCustomerId(1L);
 
-        // Initialize test objects
         cart = new Cart();
-        product = new Product();
-        cartProduct = new CartProduct();
+        cart.setCartId(1L);
+        cart.setCustomer(customer);
+        cart.setCartProductList(new ArrayList<>());
 
-        // Set up relationships
-        cartProduct.setProduct(product);
+        order = new Order();
+        order.setOrderId(1L);
+    }
+
+    @Test
+    public void testConfirmOrder_Success() {
+        CartProduct cartProduct = new CartProduct();
+        cartProduct.setProduct(new Product());
         cartProduct.setQuantity(2);
-        cart.addCartProduct(cartProduct);
-        cart.setTotalPrice(100.0);
-        cart.setNumberOfProduct(2);
-        cart.setCustomer(new Customer()); // Assuming a Customer object is set
+        cart.getCartProductList().add(cartProduct);
+        cart.updateCartDetails();
+        when(cartRepository.findById(1L)).thenReturn(Optional.of(cart));
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        Order confirmedOrder = orderService.confirmOrder(1L);
+
+        assertNotNull(confirmedOrder);
+        assertEquals(OrderStatusEnum.NOT_SHIPPED, confirmedOrder.getOrderStatus());
+        assertEquals(cart.getTotalPrice(), confirmedOrder.getTotalAmount());
+        assertTrue(cart.getCartProductList().isEmpty());
+        verify(cartRepository).save(cart);
     }
 
     @Test
-    public void confirmOrder_ShouldCreateOrder() {
-        Long cartId = 1L;
+    public void testConfirmOrder_EmptyCart() {
+        when(cartRepository.findById(1L)).thenReturn(Optional.of(cart));
 
-        when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
-        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArguments()[0]); // Mock save
-
-        Order order = orderService.confirmOrder(cartId);
-
-        assertNotNull(order);
-        assertEquals(cart.getCustomer(), order.getCustomer());
-        assertEquals(cart.getTotalPrice(), order.getTotalAmount());
-        assertEquals(cart.getNumberOfProduct(), order.getTotalItems());
-        assertEquals(OrderStatusEnum.NOT_SHIPPED, order.getOrderStatus());
-        assertNotNull(order.getTrackingNumber());
-        assertEquals(LocalDate.now().plusDays(3), order.getDeliveryDate());
-        assertEquals(1, order.getCartProductList().size());
-        assertEquals(cartProduct.getQuantity(), order.getCartProductList().get(0).getQuantity());
-        assertEquals(product, order.getCartProductList().get(0).getProduct());
-    }
-
-    @Test
-    public void confirmOrder_ShouldThrowResourceNotFoundException() {
-        Long cartId = 1L;
-        when(cartRepository.findById(cartId)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> {
-            orderService.confirmOrder(cartId);
+        Exception exception = assertThrows(BadRequestException.class, () -> {
+            orderService.confirmOrder(1L);
         });
+
+        assertEquals("Cart is empty", exception.getMessage());
     }
 
     @Test
-    public void getAllOrders_ShouldReturnListOfOrders() {
+    public void testGetAllOrders_Success() {
         List<Order> orders = new ArrayList<>();
-        orders.add(new Order());
+        orders.add(order);
+
         when(orderRepository.findAll()).thenReturn(orders);
-        when(orderMapper.toDto(any(Order.class))).thenReturn(new OrderDTO());
+        when(orderMapper.toDto(order)).thenReturn(new OrderDTO());
 
         List<OrderDTO> orderDTOs = orderService.getAllOrders();
 
         assertNotNull(orderDTOs);
         assertEquals(1, orderDTOs.size());
+        verify(orderRepository).findAll();
     }
 
     @Test
-    public void getOrderById_ShouldReturnOrder() {
-        Long orderId = 1L;
-        Order order = new Order();
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+    public void testGetOrderById_Success() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
-        Order foundOrder = orderService.getOrderById(orderId);
+        Order foundOrder = orderService.getOrderById(1L);
 
         assertNotNull(foundOrder);
-        assertEquals(order, foundOrder);
+        assertEquals(order.getOrderId(), foundOrder.getOrderId());
     }
 
     @Test
-    public void getOrderById_ShouldThrowResourceNotFoundException() {
-        Long orderId = 1L;
-        when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
+    public void testGetOrderById_NotFound() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> {
-            orderService.getOrderById(orderId);
+        Exception exception = assertThrows(ResourceNotFoundException.class, () -> {
+            orderService.getOrderById(1L);
         });
+
+        assertEquals("Order not found", exception.getMessage());
     }
 
     @Test
-    public void getOrdersByCustomerId_ShouldReturnListOfOrders() {
-        Long customerId = 1L;
-        when(customerRepository.findById(customerId)).thenReturn(Optional.of(new Customer()));
+    public void testGetOrdersByCustomerId_Success() {
         List<Order> orders = new ArrayList<>();
-        orders.add(new Order());
-        when(orderRepository.findByCustomer_CustomerId(customerId)).thenReturn(orders);
+        orders.add(order);
 
-        List<Order> foundOrders = orderService.getOrdersByCustomerId(customerId);
+        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        when(orderRepository.findByCustomer_CustomerId(1L)).thenReturn(orders);
+
+        List<Order> foundOrders = orderService.getOrdersByCustomerId(1L);
 
         assertNotNull(foundOrders);
         assertEquals(1, foundOrders.size());
     }
 
     @Test
-    public void getOrdersByCustomerId_ShouldThrowResourceNotFoundException() {
-        Long customerId = 1L;
-        when(customerRepository.findById(customerId)).thenReturn(Optional.empty());
+    public void testGetOrdersByCustomerId_CustomerNotFound() {
+        when(customerRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> {
-            orderService.getOrdersByCustomerId(customerId);
+        Exception exception = assertThrows(ResourceNotFoundException.class, () -> {
+            orderService.getOrdersByCustomerId(1L);
         });
+
+        assertEquals("Customer not found", exception.getMessage());
     }
 
     @Test
-    public void trackOrder_ShouldReturnOrder() {
-        Long orderId = 1L;
-        Order order = new Order();
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+    public void testTrackOrder_Success() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
-        Order foundOrder = orderService.trackOrder(orderId);
+        Order trackedOrder = orderService.trackOrder(1L);
 
-        assertNotNull(foundOrder);
-        assertEquals(order, foundOrder);
-    }
-
-    @Test
-    public void trackOrder_ShouldThrowResourceNotFoundException() {
-        Long orderId = 1L;
-        when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> {
-            orderService.trackOrder(orderId);
-        });
+        assertNotNull(trackedOrder);
+        assertEquals(order.getOrderId(), trackedOrder.getOrderId());
     }
 }

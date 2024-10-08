@@ -41,8 +41,6 @@ public class Customer implements UserDetails {
     private String password;
 
 
-    //   Bidirectional mapping with cart class which will have customerId foreign key
-    //@JsonManagedReference
     @OneToOne(cascade = CascadeType.ALL)
     private Cart cart;
 

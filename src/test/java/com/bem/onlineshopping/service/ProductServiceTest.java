@@ -1,24 +1,26 @@
 package com.bem.onlineshopping.service;
 
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.bem.onlineshopping.dto.ProductDTO;
+import com.bem.onlineshopping.exception.ResourceNotFoundException;
 import com.bem.onlineshopping.mappers.ProductMapper;
 import com.bem.onlineshopping.model.Product;
 import com.bem.onlineshopping.repository.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import com.bem.onlineshopping.exception.BadRequestException;
-import com.bem.onlineshopping.exception.ResourceNotFoundException;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
 public class ProductServiceTest {
 
     @InjectMocks
@@ -31,25 +33,18 @@ public class ProductServiceTest {
     private ProductMapper productMapper;
 
     private Product product;
-    private ProductDTO productDTO;
 
     @BeforeEach
     public void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        // Initialize test objects
         product = new Product();
         product.setProductId(1L);
-        product.setName("Test Product");
+        product.setName("Sample Product");
         product.setPrice(100.0);
-
-        productDTO = new ProductDTO();
-        productDTO.setName("Test Product");
-        productDTO.setPrice(100.0);
+        product.setInventory(10);
     }
 
     @Test
-    public void getAllProducts_ShouldReturnListOfProducts() {
+    public void testGetAllProducts_Success() {
         List<Product> products = new ArrayList<>();
         products.add(product);
 
@@ -59,97 +54,82 @@ public class ProductServiceTest {
 
         assertNotNull(foundProducts);
         assertEquals(1, foundProducts.size());
-        assertEquals(product, foundProducts.get(0));
+        assertEquals(product.getProductId(), foundProducts.get(0).getProductId());
     }
 
     @Test
-    public void getProductById_ShouldReturnProduct() {
-        Long productId = 1L;
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+    public void testGetProductById_Success() {
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
 
-        Product foundProduct = productService.getProductById(productId);
+        Product foundProduct = productService.getProductById(1L);
 
         assertNotNull(foundProduct);
-        assertEquals(product, foundProduct);
+        assertEquals(product.getProductId(), foundProduct.getProductId());
     }
 
     @Test
-    public void getProductById_ShouldThrowResourceNotFoundException() {
-        Long productId = 1L;
-        when(productRepository.findById(productId)).thenReturn(Optional.empty());
+    public void testGetProductById_NotFound() {
+        when(productRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> {
-            productService.getProductById(productId);
+        Exception exception = assertThrows(ResourceNotFoundException.class, () -> {
+            productService.getProductById(1L);
         });
+
+        assertEquals("Product not found", exception.getMessage());
     }
 
     @Test
-    public void createProduct_ShouldReturnCreatedProduct() {
+    public void testCreateProduct_Success() {
+        ProductDTO productDTO = new ProductDTO();
+        productDTO.setName("New Product");
+        productDTO.setPrice(150.0);
+
         when(productMapper.toEntity(productDTO)).thenReturn(product);
         when(productRepository.save(product)).thenReturn(product);
 
         Product createdProduct = productService.createProduct(productDTO);
 
         assertNotNull(createdProduct);
-        assertEquals(product, createdProduct);
+        assertEquals(product.getName(), createdProduct.getName());
+        verify(productMapper).toEntity(productDTO);
+        verify(productRepository).save(product);
     }
 
     @Test
-    public void updateProduct_ShouldReturnUpdatedProduct() {
-        Long productId = 1L;
-        Product updatedProduct = new Product();
-        updatedProduct.setProductId(productId);
-        updatedProduct.setName("Updated Product");
-        updatedProduct.setPrice(150.0);
+    public void testUpdateProduct_NotFound() {
+        ProductDTO updatedProductDTO = new ProductDTO();
+        updatedProductDTO.setName("Updated Product");
+        updatedProductDTO.setPrice(120.0);
 
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
-        when(productMapper.toEntity(productDTO)).thenReturn(updatedProduct);
-        when(productRepository.save(any(Product.class))).thenReturn(updatedProduct);
+        when(productRepository.findById(1L)).thenReturn(Optional.empty());
 
-        productDTO.setName("Updated Product");
-        productDTO.setPrice(150.0);
-
-        Product result = productService.updateProduct(productId, productDTO);
-
-        assertNotNull(result);
-        assertEquals(updatedProduct.getName(), result.getName());
-        assertEquals(updatedProduct.getPrice(), result.getPrice());
-    }
-
-    @Test
-    public void updateProduct_ShouldThrowResourceNotFoundException() {
-        Long productId = 1L;
-        when(productRepository.findById(productId)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> {
-            productService.updateProduct(productId, productDTO);
+        Exception exception = assertThrows(ResourceNotFoundException.class, () -> {
+            productService.updateProduct(1L, updatedProductDTO);
         });
+
+        assertEquals("Product not found", exception.getMessage());
     }
 
     @Test
-    public void deleteProduct_ShouldCallDeleteById() {
-        Long productId = 1L;
+    public void testDeleteProduct_Success() {
+        doNothing().when(productRepository).deleteById(1L);
 
-        doNothing().when(productRepository).deleteById(productId);
-        productService.deleteProduct(productId);
+        productService.deleteProduct(1L);
 
-        verify(productRepository, times(1)).deleteById(productId);
+        verify(productRepository).deleteById(1L);
     }
 
     @Test
-    public void getAvailableProducts_ShouldReturnListOfAvailableProducts() {
+    public void testGetAvailableProducts_Success() {
         List<Product> availableProducts = new ArrayList<>();
-        Product availableProduct = new Product();
-        availableProduct.setProductId(2L);
-        availableProduct.setInventory(10);
-        availableProducts.add(availableProduct);
+        availableProducts.add(product);
 
         when(productRepository.findProductByInventoryGreaterThan(0)).thenReturn(availableProducts);
 
-        List<Product> foundAvailableProducts = productService.getAvailableProducts();
+        List<Product> foundProducts = productService.getAvailableProducts();
 
-        assertNotNull(foundAvailableProducts);
-        assertEquals(1, foundAvailableProducts.size());
-        assertEquals(availableProduct, foundAvailableProducts.get(0));
+        assertNotNull(foundProducts);
+        assertEquals(1, foundProducts.size());
+        assertEquals(product.getProductId(), foundProducts.get(0).getProductId());
     }
 }

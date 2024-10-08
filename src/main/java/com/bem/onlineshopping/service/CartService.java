@@ -3,6 +3,7 @@ package com.bem.onlineshopping.service;
 import com.bem.onlineshopping.dto.AddProductToCartDTO;
 import com.bem.onlineshopping.dto.CartDTO;
 import com.bem.onlineshopping.dto.CartProductDTO;
+import com.bem.onlineshopping.exception.AccessDeniedException;
 import com.bem.onlineshopping.exception.BadRequestException;
 import com.bem.onlineshopping.exception.ResourceNotFoundException;
 import com.bem.onlineshopping.mappers.CartMapper;
@@ -104,5 +105,28 @@ public class CartService {
     public CartProduct getCartProductById(Long cartProductId) {
         return cartProductRepository.findById(cartProductId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
+    }
+
+    public Cart updateProductQuantity(Long cartProductId, Integer quantity) {
+        CartProduct cartProduct = cartProductRepository.findById(cartProductId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart product not found"));
+
+        Product product = productRepository.findById(cartProduct.getProduct().getProductId())
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        int availableQuantity = product.getInventory();
+
+        if (availableQuantity < quantity) {
+            throw new BadRequestException("Insufficient Quantity");
+        }
+
+        cartProduct.setQuantity(quantity);
+        cartProduct.getCart().updateCartDetails();
+
+        product.setInventory(availableQuantity - cartProduct.getQuantity());
+
+        cartProductRepository.save(cartProduct);
+
+        return cartProduct.getCart();
     }
 }
